@@ -34,7 +34,9 @@
     - **components/**
     - **UI/**
 
-
+## Dependencies
+- Material UI for the ui
+- Nativewind for the style
 
 
 
