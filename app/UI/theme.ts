@@ -1,0 +1,31 @@
+export const workspaceTheme = {
+  colors: {
+    appBackground: '#f4efe7',
+    panel: '#fffbf4',
+    panelMuted: '#f8f0e4',
+    panelStrong: '#efe2d0',
+    border: '#ded0bd',
+    borderStrong: '#c9b89f',
+    ink: '#28231d',
+    inkMuted: '#756b5f',
+    inkSoft: '#9d9285',
+    accent: '#8f5f38',
+    accentDark: '#674124',
+    accentSoft: '#ead2bb',
+    success: '#3f6f50',
+    danger: '#9d3b32',
+    input: '#fffdf8',
+  },
+  radius: {
+    small: 10,
+    medium: 16,
+    large: 24,
+  },
+  spacing: {
+    xs: 6,
+    sm: 10,
+    md: 16,
+    lg: 24,
+    xl: 34,
+  },
+};
