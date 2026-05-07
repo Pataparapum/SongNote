@@ -35,9 +35,9 @@
     - **UI/**
 
 ## Dependencies
-- Material UI for the ui
-- Material Icon for icons
-- Nativewind for the style
+- Material UI use for ui
+- Material Icon use for icons
+- Nativewind use for the style
 
 
 
