@@ -6,20 +6,21 @@ import { Text } from 'react-native-paper';
 import { workspaceTheme } from '@/UI/theme';
 import type { WorkspaceItem } from '@/modules/workspace';
 
-type WorkspaceTreeProps = {
+type WorkspaceListProps = {
   items: WorkspaceItem[];
   selectedId: string | null;
   onSelect: (item: WorkspaceItem) => void;
 };
 
-type TreeRowProps = WorkspaceTreeProps & {
+type TreeRowProps = WorkspaceListProps & {
   item: WorkspaceItem;
   level: number;
 };
 
 const PaperText = cssInterop(Text, { className: 'style' });
 
-export function WorkspaceTree({ items, selectedId, onSelect }: WorkspaceTreeProps) {
+// Renders the (already filtered) folder/file list, or an empty-state message.
+export function WorkspaceList({ items, selectedId, onSelect }: WorkspaceListProps) {
   if (items.length === 0) {
     return <PaperText className="px-1 text-sm leading-5 text-[#9d9285]">No folders or files found.</PaperText>;
   }
@@ -33,6 +34,7 @@ export function WorkspaceTree({ items, selectedId, onSelect }: WorkspaceTreeProp
   );
 }
 
+// Recursive row: renders itself, then its children indented one level deeper.
 function TreeRow({ item, level, selectedId, onSelect }: TreeRowProps) {
   const isSelected = item.id === selectedId;
   const iconName = item.type === 'folder' ? 'library-music' : 'music-note';
@@ -58,6 +60,7 @@ function TreeRow({ item, level, selectedId, onSelect }: TreeRowProps) {
         </PaperText>
       </Pressable>
 
+      {/* Children only render for folders, one indentation level deeper */}
       {item.type === 'folder' && item.children?.map((child) => (
         <TreeRow
           key={child.id}
