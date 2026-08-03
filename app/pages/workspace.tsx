@@ -4,6 +4,7 @@ import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { WorkspaceTree } from '@/components/tree/workspace-tree';
+import type { WorkspaceDraft } from '@/components/tree/workspace-list';
 import { WorkspaceFileManager } from '@/components/workspace/workspace-file-manager';
 import { WorkspaceOverview } from '@/components/workspace/workspace-overview';
 import {
@@ -11,7 +12,6 @@ import {
   createWorkspaceItem,
   findItem,
   findParentFolderId,
-  getItemPath,
   initialWorkspaceItems,
   updateFileContent,
   type WorkspaceItem,
@@ -24,21 +24,29 @@ export default function WorkspacePage() {
   const { width } = useWindowDimensions();
   const isWideLayout = width >= 880;
   const [items, setItems] = useState(initialWorkspaceItems);
-  const [selectedId, setSelectedId] = useState<string | null>('folder-songs');
-  const [activeFolderId, setActiveFolderId] = useState<string | null>('folder-songs');
-  const [newItemName, setNewItemName] = useState('');
-  const [formError, setFormError] = useState('');
-  const [workspaceLocation, setWorkspaceLocation] = useState('documents');
-  const [customPath, setCustomPath] = useState('C:/Users/YourName/Documents/SongChord');
+  const [selectedId, setSelectedId] = useState<string | null>('folder-pruebas');
+  const [activeFolderId, setActiveFolderId] = useState<string | null>('folder-pruebas');
+  const [draftType, setDraftType] = useState<WorkspaceItemType | null>(null);
+  const [draftParentId, setDraftParentId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
 
   const selectedItem = findItem(items, selectedId);
   const activeFolder = findItem(items, activeFolderId);
   const activeFolderItems = activeFolder?.type === 'folder' ? activeFolder.children ?? [] : items;
-  const currentPath = getItemPath(items, selectedId);
+  const overviewTitle = selectedItem?.type === 'file' ? selectedItem.name : activeFolder?.name ?? 'Workspace root';
+  const draft: WorkspaceDraft | null = draftType
+    ? {
+        parentId: draftParentId,
+        type: draftType,
+        name: draftName,
+        onChangeName: setDraftName,
+        onSubmit: handleSubmitDraft,
+        onCancel: handleCancelDraft,
+      }
+    : null;
 
   function handleSelectItem(item: WorkspaceItem) {
     setSelectedId(item.id);
-    setFormError('');
 
     if (item.type === 'folder') {
       setActiveFolderId(item.id);
@@ -48,26 +56,32 @@ export default function WorkspacePage() {
     setActiveFolderId(findParentFolderId(items, item.id));
   }
 
-  function handleChangeNewItemName(value: string) {
-    setNewItemName(value);
-    setFormError('');
+  function handleStartCreate(type: WorkspaceItemType) {
+    setDraftType(type);
+    setDraftParentId(activeFolderId);
+    setDraftName('');
   }
 
-  function handleCreateItem(type: WorkspaceItemType) {
-    const trimmedName = newItemName.trim();
+  function handleCancelDraft() {
+    setDraftType(null);
+    setDraftParentId(null);
+    setDraftName('');
+  }
 
-    if (!trimmedName) {
-      setFormError('Add a name before creating an item.');
+  function handleSubmitDraft() {
+    const trimmedName = draftName.trim();
+
+    if (!draftType || !trimmedName) {
+      handleCancelDraft();
       return;
     }
 
-    const newItem = createWorkspaceItem(type, trimmedName);
+    const newItem = createWorkspaceItem(draftType, trimmedName);
 
-    setItems((currentItems) => addItemToFolder(currentItems, activeFolderId, newItem));
+    setItems((currentItems) => addItemToFolder(currentItems, draftParentId, newItem));
     setSelectedId(newItem.id);
-    setActiveFolderId(type === 'folder' ? newItem.id : activeFolderId);
-    setNewItemName('');
-    setFormError('');
+    setActiveFolderId(draftType === 'folder' ? newItem.id : draftParentId);
+    handleCancelDraft();
   }
 
   function handleUpdateFileContent(content: string) {
@@ -85,32 +99,29 @@ export default function WorkspacePage() {
         <View
           className={`gap-4 bg-[#f8f0e4] p-6 ${
             isWideLayout
-              ? 'w-[310px] max-w-[340px] border-r border-[#ded0bd]'
+              ? 'w-[230px] max-w-[250px] border-r border-[#ded0bd]'
               : 'w-full max-w-full border-b border-[#ded0bd]'
           }`}>
           <PaperText className="text-xs font-extrabold uppercase tracking-[1.4px] text-[#8f5f38]">SongChord</PaperText>
           <PaperText className="text-[26px] font-black tracking-[-0.4px] text-[#28231d]">Workspace</PaperText>
 
-          <WorkspaceTree items={items} selectedId={selectedId} onSelect={handleSelectItem} />
+          <WorkspaceTree
+            items={items}
+            selectedId={selectedId}
+            onSelect={handleSelectItem}
+            draft={draft}
+            onStartCreate={handleStartCreate}
+          />
         </View>
 
         <ScrollView className="flex-1" contentContainerClassName="gap-6 p-[34px]">
-          {/* Section 1: page heading and the conceptual storage location picker */}
-          <WorkspaceOverview
-            currentPath={currentPath}
-            workspaceLocation={workspaceLocation}
-            onSelectWorkspaceLocation={setWorkspaceLocation}
-            customPath={customPath}
-            onChangeCustomPath={setCustomPath}
-          />
+          {/* Section 1: page heading */}
+          <WorkspaceOverview title={overviewTitle} />
 
-          {/* Section 2: create new items, and edit/browse the active selection */}
+          <View className="h-px bg-[#ded0bd]" />
+
+          {/* Section 2: edit/browse the active selection */}
           <WorkspaceFileManager
-            activeFolderName={activeFolder?.name ?? 'workspace root'}
-            newItemName={newItemName}
-            onChangeNewItemName={handleChangeNewItemName}
-            formError={formError}
-            onCreateItem={handleCreateItem}
             selectedItem={selectedItem}
             activeFolderItems={activeFolderItems}
             onSelectItem={handleSelectItem}

@@ -8,17 +8,26 @@ export type WorkspaceItem = {
   children?: WorkspaceItem[];
 };
 
+// Temporary local-only root: until items sync through a real database, everything created in the
+// app is nested under "Pruebas" so test data stays in one clearly-labeled place.
 export const initialWorkspaceItems: WorkspaceItem[] = [
   {
-    id: 'folder-songs',
-    name: 'My songs',
+    id: 'folder-pruebas',
+    name: 'Pruebas',
     type: 'folder',
     children: [
       {
-        id: 'file-first-draft',
-        name: 'First song draft',
-        type: 'file',
-        content: 'Write lyrics and chords here...',
+        id: 'folder-songs',
+        name: 'My songs',
+        type: 'folder',
+        children: [
+          {
+            id: 'file-first-draft',
+            name: 'First song draft',
+            type: 'file',
+            content: 'Write lyrics and chords here...',
+          },
+        ],
       },
     ],
   },
