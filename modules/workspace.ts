@@ -1,11 +1,42 @@
+import { createId } from '@/modules/id';
+import {
+  createEmptySongContent,
+  createLine,
+  createWord,
+  type SongContent,
+} from '@/modules/song-content';
+
 export type WorkspaceItemType = 'folder' | 'file';
 
 export type WorkspaceItem = {
   id: string;
   name: string;
   type: WorkspaceItemType;
-  content?: string;
+  content?: SongContent;
   children?: WorkspaceItem[];
+};
+
+// Seeded with a couple of chords already placed so the chord and reading modes show something on
+// first run instead of an empty page.
+const firstDraftContent: SongContent = {
+  version: 1,
+  lines: [
+    createLine([
+      { ...createWord('Tap'), chord: 'C' },
+      createWord('any'),
+      { ...createWord('word'), chord: 'G' },
+      createWord('to'),
+      { ...createWord('place'), chord: 'Am' },
+      createWord('its'),
+      { ...createWord('chord'), chord: 'F' },
+    ]),
+    createLine([]),
+    createLine([
+      { ...createWord('Switch'), chord: 'C' },
+      createWord('modes'),
+      { ...createWord('above'), chord: 'G' },
+    ]),
+  ],
 };
 
 // Temporary local-only root: until items sync through a real database, everything created in the
@@ -25,7 +56,7 @@ export const initialWorkspaceItems: WorkspaceItem[] = [
             id: 'file-first-draft',
             name: 'First song draft',
             type: 'file',
-            content: 'Write lyrics and chords here...',
+            content: firstDraftContent,
           },
         ],
       },
@@ -35,10 +66,10 @@ export const initialWorkspaceItems: WorkspaceItem[] = [
 
 export function createWorkspaceItem(type: WorkspaceItemType, name: string): WorkspaceItem {
   return {
-    id: `${type}-${Date.now()}-${Math.round(Math.random() * 10000)}`,
+    id: createId(),
     name,
     type,
-    content: type === 'file' ? '' : undefined,
+    content: type === 'file' ? createEmptySongContent() : undefined,
     children: type === 'folder' ? [] : undefined,
   };
 }
@@ -112,7 +143,7 @@ export function findParentFolderId(
 export function updateFileContent(
   items: WorkspaceItem[],
   fileId: string,
-  content: string,
+  content: SongContent,
 ): WorkspaceItem[] {
   return items.map((item) => {
     if (item.id === fileId && item.type === 'file') {

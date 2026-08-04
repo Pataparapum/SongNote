@@ -1,0 +1,21 @@
+// Quick picks for the chord picker — anything outside this list is typed by hand.
+export const commonChords = [
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'A',
+  'B',
+  'Am',
+  'Bm',
+  'Cm',
+  'Dm',
+  'Em',
+  'Fm',
+  'Gm',
+  'C7',
+  'D7',
+  'E7',
+  'G7',
+];

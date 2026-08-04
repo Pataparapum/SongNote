@@ -7,6 +7,7 @@ import { WorkspaceTree } from '@/components/tree/workspace-tree';
 import type { WorkspaceDraft } from '@/components/tree/workspace-list';
 import { WorkspaceFileManager } from '@/components/workspace/workspace-file-manager';
 import { WorkspaceOverview } from '@/components/workspace/workspace-overview';
+import type { SongContent } from '@/modules/song-content';
 import {
   addItemToFolder,
   createWorkspaceItem,
@@ -84,7 +85,7 @@ export default function WorkspacePage() {
     handleCancelDraft();
   }
 
-  function handleUpdateFileContent(content: string) {
+  function handleUpdateFileContent(content: SongContent) {
     if (!selectedItem || selectedItem.type !== 'file') {
       return;
     }

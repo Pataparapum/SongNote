@@ -1,22 +1,20 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { cssInterop } from 'nativewind';
 import { Pressable, View } from 'react-native';
-import { Text, TextInput } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 
+import { SongEditor } from '@/components/song-editor/song-editor';
 import { workspaceTheme } from '@/UI/theme';
+import { createEmptySongContent, type SongContent } from '@/modules/song-content';
 import type { WorkspaceItem } from '@/modules/workspace';
 
 const PaperText = cssInterop(Text, { className: 'style' });
-const PaperTextInput = cssInterop(TextInput, {
-  className: 'style',
-  contentClassName: 'contentStyle',
-});
 
 type WorkspaceFileManagerProps = {
   selectedItem: WorkspaceItem | null;
   activeFolderItems: WorkspaceItem[];
   onSelectItem: (item: WorkspaceItem) => void;
-  onChangeFileContent: (content: string) => void;
+  onChangeFileContent: (content: SongContent) => void;
 };
 
 // Selected file editor, or a browsable listing of the active folder's contents — no boxed panels, content sits directly on the page.
@@ -28,19 +26,10 @@ export function WorkspaceFileManager({
 }: WorkspaceFileManagerProps) {
   if (selectedItem?.type === 'file') {
     return (
-      <PaperTextInput
-        value={selectedItem.content ?? ''}
-        onChangeText={onChangeFileContent}
-        mode="flat"
-        underlineColor="transparent"
-        activeUnderlineColor="transparent"
-        placeholder="Write lyrics, chords, notes, or reminders here..."
-        placeholderTextColor={workspaceTheme.colors.inkSoft}
-        textColor={workspaceTheme.colors.ink}
-        multiline
-        textAlignVertical="top"
-        className="min-h-[320px] bg-transparent"
-        contentClassName="min-h-[320px] px-0 text-base leading-6 text-[#28231d]"
+      <SongEditor
+        key={selectedItem.id}
+        content={selectedItem.content ?? createEmptySongContent()}
+        onChangeContent={onChangeFileContent}
       />
     );
   }
