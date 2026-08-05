@@ -1,9 +1,11 @@
 import { createId } from '@/modules/id';
 import {
   createEmptySongContent,
+  createEmptySongMetadata,
   createLine,
   createWord,
   type SongContent,
+  type SongMetadata,
 } from '@/modules/song-content';
 
 export type WorkspaceItemType = 'folder' | 'file';
@@ -13,6 +15,7 @@ export type WorkspaceItem = {
   name: string;
   type: WorkspaceItemType;
   content?: SongContent;
+  metadata?: SongMetadata;
   children?: WorkspaceItem[];
 };
 
@@ -70,6 +73,7 @@ export function createWorkspaceItem(type: WorkspaceItemType, name: string): Work
     name,
     type,
     content: type === 'file' ? createEmptySongContent() : undefined,
+    metadata: type === 'file' ? createEmptySongMetadata() : undefined,
     children: type === 'folder' ? [] : undefined,
   };
 }
@@ -156,6 +160,74 @@ export function updateFileContent(
 
     return item;
   });
+}
+
+export function removeItem(items: WorkspaceItem[], itemId: string): WorkspaceItem[] {
+  return items.reduce<WorkspaceItem[]>((results, item) => {
+    if (item.id === itemId) {
+      return results;
+    }
+
+    if (item.type === 'folder') {
+      results.push({ ...item, children: removeItem(item.children ?? [], itemId) });
+    } else {
+      results.push(item);
+    }
+
+    return results;
+  }, []);
+}
+
+export function renameItem(items: WorkspaceItem[], itemId: string, name: string): WorkspaceItem[] {
+  return items.map((item) => {
+    if (item.id === itemId) {
+      return { ...item, name };
+    }
+
+    if (item.type === 'folder') {
+      return { ...item, children: renameItem(item.children ?? [], itemId, name) };
+    }
+
+    return item;
+  });
+}
+
+export function updateItemMetadata(
+  items: WorkspaceItem[],
+  itemId: string,
+  metadata: SongMetadata,
+): WorkspaceItem[] {
+  return items.map((item) => {
+    if (item.id === itemId && item.type === 'file') {
+      return { ...item, metadata };
+    }
+
+    if (item.type === 'folder') {
+      return { ...item, children: updateItemMetadata(item.children ?? [], itemId, metadata) };
+    }
+
+    return item;
+  });
+}
+
+export type FileSnapshot = { content: SongContent; metadata: SongMetadata };
+
+// One entry per file in the tree, holding its content/metadata as they are right now. Used as the
+// "last saved" baseline per song — flattened once at load time, then updated one entry at a time as
+// individual songs get saved, since saving is scoped to whichever song is open, not the whole tree.
+export function flattenFileSnapshots(items: WorkspaceItem[]): Record<string, FileSnapshot> {
+  return items.reduce<Record<string, FileSnapshot>>((snapshots, item) => {
+    if (item.type === 'file') {
+      snapshots[item.id] = {
+        content: item.content ?? createEmptySongContent(),
+        metadata: item.metadata ?? createEmptySongMetadata(),
+      };
+    } else {
+      Object.assign(snapshots, flattenFileSnapshots(item.children ?? []));
+    }
+
+    return snapshots;
+  }, {});
 }
 
 export function filterItems(items: WorkspaceItem[], query: string): WorkspaceItem[] {

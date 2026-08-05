@@ -19,6 +19,38 @@ export type SongContent = {
   lines: SongLine[];
 };
 
+export const chromaticNotes = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+] as const;
+
+export type SongKey = (typeof chromaticNotes)[number];
+
+// Only major/minor for now — more modes (dorian, mixolydian...) can be added here later without
+// touching anything that already reads this type, since callers just render whatever list exists.
+export type SongScale = 'major' | 'minor';
+
+// Optional per-song facts, separate from the lyrics/chords in SongContent: the key is the value
+// that gets persisted, transposition (see modules/transpose.ts) never writes back into this.
+export type SongMetadata = {
+  key: SongKey | null;
+  scale: SongScale | null;
+};
+
+export function createEmptySongMetadata(): SongMetadata {
+  return { key: null, scale: null };
+}
+
 export function createEmptySongContent(): SongContent {
   return { version: 1, lines: [createLine([])] };
 }

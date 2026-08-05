@@ -65,7 +65,7 @@ export function ChordPickerSheet({
               className={`min-w-11 items-center rounded-[10px] border border-[#ded0bd] px-3 py-2 ${
                 chord === currentChord ? 'border-[#8f5f38] bg-[#ead2bb]' : 'bg-[#fffdf8]'
               }`}>
-              <PaperText className="text-[15px] font-bold text-[#28231d]">{chord}</PaperText>
+              <PaperText className="text-[15px] font-bold text-[#674124]">{chord}</PaperText>
             </Pressable>
           ))}
         </View>

@@ -24,7 +24,7 @@ type WordRef = { lineId: string; wordId: string };
 // Chord placing mode: lyrics are read-only here, every word is a target for a chord, and the "+"
 // slots between words insert a chord that falls where nothing is sung.
 export function SongChordView() {
-  const { content, onChangeContent } = useSongEditor();
+  const { content, onChangeContent, transposeSemitones } = useSongEditor();
   const [editing, setEditing] = useState<WordRef | null>(null);
 
   const editedWord = editing ? findWord(content, editing.lineId, editing.wordId) : null;
@@ -78,6 +78,7 @@ export function SongChordView() {
         <ChordLineRow
           key={line.id}
           line={line}
+          transposeSemitones={transposeSemitones}
           onPressWord={(wordId) => setEditing({ lineId: line.id, wordId })}
           onInsertGhost={(atIndex) => handleInsertGhost(line.id, atIndex)}
         />
@@ -102,13 +103,14 @@ export function SongChordView() {
 
 type ChordLineRowProps = {
   line: SongLine;
+  transposeSemitones: number;
   onPressWord: (wordId: string) => void;
   onInsertGhost: (atIndex: number) => void;
 };
 
 // A line renders as insert slot, word, insert slot, word... so a chord can be dropped before, between
 // or after any word. A line whose words are all ghosts is simply an instrumental line.
-function ChordLineRow({ line, onPressWord, onInsertGhost }: ChordLineRowProps) {
+function ChordLineRow({ line, transposeSemitones, onPressWord, onInsertGhost }: ChordLineRowProps) {
   return (
     <View className="min-h-[52px] flex-row flex-wrap items-end">
       <InsertSlot onPress={() => onInsertGhost(0)} />
@@ -117,7 +119,7 @@ function ChordLineRow({ line, onPressWord, onInsertGhost }: ChordLineRowProps) {
           <Pressable
             onPress={() => onPressWord(word.id)}
             className="rounded-[10px] px-1 py-1 hover:bg-[#ece2d2] active:bg-[#ece2d2]">
-            <SongWordCell word={word} />
+            <SongWordCell word={word} transposeSemitones={transposeSemitones} />
           </Pressable>
           <InsertSlot onPress={() => onInsertGhost(index + 1)} />
         </View>

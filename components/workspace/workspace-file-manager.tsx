@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { SongEditor } from '@/components/song-editor/song-editor';
+import type { SongEditorMode } from '@/components/song-editor/song-editor-context';
 import { workspaceTheme } from '@/UI/theme';
 import { createEmptySongContent, type SongContent } from '@/modules/song-content';
 import type { WorkspaceItem } from '@/modules/workspace';
@@ -15,6 +16,10 @@ type WorkspaceFileManagerProps = {
   activeFolderItems: WorkspaceItem[];
   onSelectItem: (item: WorkspaceItem) => void;
   onChangeFileContent: (content: SongContent) => void;
+  mode: SongEditorMode;
+  onChangeMode: (mode: SongEditorMode) => void;
+  transposeSemitones?: number;
+  onAutosaveTrigger?: () => void;
 };
 
 // Selected file editor, or a browsable listing of the active folder's contents — no boxed panels, content sits directly on the page.
@@ -23,6 +28,10 @@ export function WorkspaceFileManager({
   activeFolderItems,
   onSelectItem,
   onChangeFileContent,
+  mode,
+  onChangeMode,
+  transposeSemitones,
+  onAutosaveTrigger,
 }: WorkspaceFileManagerProps) {
   if (selectedItem?.type === 'file') {
     return (
@@ -30,6 +39,10 @@ export function WorkspaceFileManager({
         key={selectedItem.id}
         content={selectedItem.content ?? createEmptySongContent()}
         onChangeContent={onChangeFileContent}
+        mode={mode}
+        onChangeMode={onChangeMode}
+        transposeSemitones={transposeSemitones}
+        onAutosaveTrigger={onAutosaveTrigger}
       />
     );
   }

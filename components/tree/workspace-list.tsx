@@ -7,15 +7,26 @@ import { Text, TextInput } from 'react-native-paper';
 import { workspaceTheme } from '@/UI/theme';
 import type { WorkspaceItem, WorkspaceItemType } from '@/modules/workspace';
 
-// Inline "new item" row being typed into the tree, VS Code-style.
-export type WorkspaceDraft = {
-  parentId: string | null;
-  type: WorkspaceItemType;
-  name: string;
-  onChangeName: (value: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
-};
+// Inline "new item" row being typed into the tree (VS Code-style), or an existing item's name being
+// edited in place — same visual slot, different data underneath.
+export type WorkspaceDraft =
+  | {
+      mode: 'create';
+      parentId: string | null;
+      type: WorkspaceItemType;
+      name: string;
+      onChangeName: (value: string) => void;
+      onSubmit: () => void;
+      onCancel: () => void;
+    }
+  | {
+      mode: 'rename';
+      itemId: string;
+      name: string;
+      onChangeName: (value: string) => void;
+      onSubmit: () => void;
+      onCancel: () => void;
+    };
 
 type WorkspaceListProps = {
   items: WorkspaceItem[];
@@ -24,6 +35,7 @@ type WorkspaceListProps = {
   draft?: WorkspaceDraft | null;
   parentId?: string | null;
   forceExpanded?: boolean;
+  onContextMenuRequest?: (item: WorkspaceItem, x: number, y: number) => void;
 };
 
 type TreeRowProps = {
@@ -33,6 +45,7 @@ type TreeRowProps = {
   onSelect: (item: WorkspaceItem) => void;
   draft?: WorkspaceDraft | null;
   forceExpanded?: boolean;
+  onContextMenuRequest?: (item: WorkspaceItem, x: number, y: number) => void;
 };
 
 const PaperText = cssInterop(Text, { className: 'style' });
@@ -45,8 +58,16 @@ const rowIndent = (level: number) => ({ paddingLeft: 10 + level * 16 });
 const rowIndentSpacer = (level: number) => ({ width: 10 + level * 16 });
 
 // Renders the (already filtered) folder/file list, or an empty-state message.
-export function WorkspaceList({ items, selectedId, onSelect, draft, parentId = null, forceExpanded }: WorkspaceListProps) {
-  const showDraftHere = draft?.parentId === parentId;
+export function WorkspaceList({
+  items,
+  selectedId,
+  onSelect,
+  draft,
+  parentId = null,
+  forceExpanded,
+  onContextMenuRequest,
+}: WorkspaceListProps) {
+  const showDraftHere = draft?.mode === 'create' && draft.parentId === parentId;
 
   if (items.length === 0 && !showDraftHere) {
     return <PaperText className="px-1 text-sm leading-5 text-[#9d9285]">No folders or files found.</PaperText>;
@@ -63,22 +84,24 @@ export function WorkspaceList({ items, selectedId, onSelect, draft, parentId = n
           onSelect={onSelect}
           draft={draft}
           forceExpanded={forceExpanded}
+          onContextMenuRequest={onContextMenuRequest}
         />
       ))}
-      {showDraftHere ? <WorkspaceDraftRow level={0} draft={draft} /> : null}
+      {showDraftHere ? <WorkspaceInlineNameInput level={0} draft={draft} iconName="note-add" /> : null}
     </View>
   );
 }
 
 // Recursive row: renders itself, then (when expanded) its children and a draft row, indented one level deeper.
 // Folders are collapsed by default; pressing a folder row toggles it open/closed.
-function TreeRow({ item, level, selectedId, onSelect, draft, forceExpanded }: TreeRowProps) {
+function TreeRow({ item, level, selectedId, onSelect, draft, forceExpanded, onContextMenuRequest }: TreeRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isFolder = item.type === 'folder';
   const isSelected = item.id === selectedId;
   const iconName = isFolder ? 'library-music' : 'music-note';
-  const showDraftInChildren = isFolder && draft?.parentId === item.id;
+  const showDraftInChildren = draft?.mode === 'create' && draft.parentId === item.id;
   const showChildren = isFolder && (forceExpanded || isExpanded || showDraftInChildren);
+  const isRenaming = draft?.mode === 'rename' && draft.itemId === item.id;
 
   function handlePress() {
     onSelect(item);
@@ -88,10 +111,26 @@ function TreeRow({ item, level, selectedId, onSelect, draft, forceExpanded }: Tr
     }
   }
 
+  function handleLongPress(event: { nativeEvent: { pageX: number; pageY: number } }) {
+    onSelect(item);
+    onContextMenuRequest?.(item, event.nativeEvent.pageX, event.nativeEvent.pageY);
+  }
+
+  if (isRenaming) {
+    return (
+      <WorkspaceInlineNameInput level={level} draft={draft} iconName={iconName} />
+    );
+  }
+
   return (
     <View>
       <Pressable
         onPress={handlePress}
+        onLongPress={handleLongPress}
+        // Web-only prop (not in RN's core types, react-native-web still reads it at runtime): lets the
+        // document-level right-click listener in WorkspaceTree find which row was clicked even while
+        // the menu is already open (see workspace-tree.tsx for why that's needed).
+        {...({ dataSet: { workspaceTreeItem: item.id } } as Record<string, unknown>)}
         className={`min-h-7 flex-row items-center gap-1 rounded-[10px] pr-2.5 ${isSelected ? 'bg-[#ead2bb]' : ''}`}>
         <View style={rowIndentSpacer(level)} />
         <View className="w-3.5 items-center justify-center">
@@ -125,22 +164,35 @@ function TreeRow({ item, level, selectedId, onSelect, draft, forceExpanded }: Tr
           onSelect={onSelect}
           draft={draft}
           forceExpanded={forceExpanded}
+          onContextMenuRequest={onContextMenuRequest}
         />
       ))}
-      {showChildren && showDraftInChildren ? <WorkspaceDraftRow level={level + 1} draft={draft} /> : null}
+      {showChildren && showDraftInChildren ? (
+        <WorkspaceInlineNameInput level={level + 1} draft={draft} iconName="note-add" />
+      ) : null}
     </View>
   );
 }
 
-// Editable row shown while a new folder/file name is being typed, matching the tree row's icon and indentation.
-function WorkspaceDraftRow({ level, draft }: { level: number; draft: WorkspaceDraft }) {
-  const iconName = draft.type === 'folder' ? 'library-music' : 'music-note';
+// Editable row shown while a new folder/file name is being typed, or an existing item is being
+// renamed — same icon/indentation as a normal row, just with an autofocused input instead of text.
+function WorkspaceInlineNameInput({
+  level,
+  draft,
+  iconName,
+}: {
+  level: number;
+  draft: WorkspaceDraft;
+  iconName: 'library-music' | 'note-add' | 'music-note';
+}) {
+  const resolvedIconName = draft.mode === 'create' ? (draft.type === 'folder' ? 'library-music' : 'note-add') : iconName;
+  const placeholder = draft.mode === 'create' ? (draft.type === 'folder' ? 'Folder name' : 'File name') : undefined;
 
   return (
     <View className="min-h-7 flex-row items-center gap-1 pr-2.5" style={rowIndent(level)}>
       <View className="w-3.5" />
       <View className="w-5 items-center justify-center">
-        <MaterialIcons name={iconName} size={16} color={workspaceTheme.colors.accentDark} />
+        <MaterialIcons name={resolvedIconName} size={16} color={workspaceTheme.colors.accentDark} />
       </View>
       <PaperTextInput
         value={draft.name}
@@ -158,11 +210,14 @@ function WorkspaceDraftRow({ level, draft }: { level: number; draft: WorkspaceDr
         outlineColor={workspaceTheme.colors.accent}
         activeOutlineColor={workspaceTheme.colors.accent}
         outlineStyle={{ borderRadius: workspaceTheme.radius.small }}
-        placeholder={draft.type === 'folder' ? 'Folder name' : 'File name'}
+        placeholder={placeholder}
         placeholderTextColor={workspaceTheme.colors.inkSoft}
         textColor={workspaceTheme.colors.ink}
-        className="h-8 flex-1 bg-[#fffdf8] text-sm"
-        contentClassName="px-2 text-sm text-[#28231d]"
+        textAlign="center"
+        // react-native-paper's dense+outlined TextInput reserves ~48px internally for the (unused)
+        // floating label area; a shorter box clips that and pins the visible text to the bottom.
+        className="h-12 flex-1 bg-[#fffdf8] text-sm"
+        contentClassName="px-2 text-center text-sm text-[#28231d]"
       />
     </View>
   );
