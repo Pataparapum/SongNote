@@ -41,7 +41,7 @@ export default function WorkspacePage() {
   const { width } = useWindowDimensions();
   const isWideLayout = width >= 880;
   const [items, setItems] = useState(initialWorkspaceItems);
-  const [selectedId, setSelectedId] = useState<string | null>('file-first-draft');
+  const [selectedId, setSelectedId] = useState<string | null>('folder-pruebas');
   const [activeFolderId, setActiveFolderId] = useState<string | null>('folder-pruebas');
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [songMode, setSongMode] = useState<SongEditorMode>('write');
@@ -322,28 +322,32 @@ export default function WorkspacePage() {
         </View>
 
         <ScrollView className="flex-1" contentContainerClassName="gap-6 p-[34px]">
-          {/* Section 1: page heading + save-this-song button (only while looking at a song in Escribir/Acordes) */}
-          <View className="flex-row items-start justify-between gap-4">
-            <View className="flex-1">
-              <WorkspaceOverview title={overviewTitle} />
-            </View>
-            {showSaveControls ? (
-              <WorkspaceSaveButton saveState={saveState} hasUnsavedChanges={isCurrentFileDirty} onPress={handleManualSave} />
+          {/* Section 1: page heading — title, per-song facts, mode switcher + save, all centered */}
+          <View className="items-center gap-4">
+            <WorkspaceOverview title={overviewTitle} />
+
+            {selectedItem?.type === 'file' ? (
+              <View className="items-center gap-4">
+                <SongMetadataBar
+                  metadata={selectedItem.metadata ?? createEmptySongMetadata()}
+                  onChangeMetadata={handleChangeMetadata}
+                  transposeSemitones={transposeSemitones}
+                  onChangeTranspose={setTransposeSemitones}
+                />
+                {/* 354px = the same width as a metadata row (140 label column + 214 control), so this
+                    row lines up visually with Tono/Escala/Transportar above. The switcher is flex-1 so
+                    it fills that whole width alone in Leer (no save button) or shares it with Guardar. */}
+                <View className="w-[354px] flex-row items-center gap-3">
+                  <View className="flex-1">
+                    <SongModeSwitcher mode={songMode} onChangeMode={handleChangeSongMode} />
+                  </View>
+                  {showSaveControls ? (
+                    <WorkspaceSaveButton saveState={saveState} hasUnsavedChanges={isCurrentFileDirty} onPress={handleManualSave} />
+                  ) : null}
+                </View>
+              </View>
             ) : null}
           </View>
-
-          {/* Optional per-song facts: key, scale, session-only transpose, and the mode switcher */}
-          {selectedItem?.type === 'file' ? (
-            <View className="gap-4">
-              <SongMetadataBar
-                metadata={selectedItem.metadata ?? createEmptySongMetadata()}
-                onChangeMetadata={handleChangeMetadata}
-                transposeSemitones={transposeSemitones}
-                onChangeTranspose={setTransposeSemitones}
-              />
-              <SongModeSwitcher mode={songMode} onChangeMode={handleChangeSongMode} />
-            </View>
-          ) : null}
 
           <View className="h-px bg-[#ded0bd]" />
 

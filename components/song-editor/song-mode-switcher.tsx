@@ -17,7 +17,7 @@ type SongModeSwitcherProps = {
 // outside the editor itself — app/pages/workspace.tsx owns this state either way.
 export function SongModeSwitcher({ mode, onChangeMode }: SongModeSwitcherProps) {
   return (
-    <View className="max-w-[420px] overflow-hidden rounded-[8px] border border-[#8f5f38]">
+    <View className="w-full max-w-[420px] overflow-hidden rounded-[8px] border border-[#8f5f38]">
       <SegmentedControl
         values={modeLabels}
         selectedIndex={modes.indexOf(mode)}
